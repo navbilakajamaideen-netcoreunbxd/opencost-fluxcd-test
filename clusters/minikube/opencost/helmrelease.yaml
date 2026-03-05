@@ -4,7 +4,7 @@ metadata:
   name: opencost
   namespace: opencost
 spec:
-  interval: 5m
+  interval: 15m
   chart:
     spec:
       chart: opencost
@@ -12,6 +12,7 @@ spec:
         kind: HelmRepository
         name: opencost
         namespace: flux-system
+      version: '*'
   values:
     opencost:
       ui:
@@ -22,3 +23,7 @@ spec:
           namespaceName: monitoring
           serviceName: prometheus-kube-prometheus-prometheus
           port: 9090
+      exporter:
+        env:
+          RESOLUTION_1H_RETENTION: "168"
+          RESOLUTION_1D_RETENTION: "30"
