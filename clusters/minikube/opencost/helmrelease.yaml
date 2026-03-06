@@ -24,6 +24,7 @@ spec:
           serviceName: prometheus-kube-prometheus-prometheus
           port: 9090
       exporter:
+        scrapeInterval: 1m
         env:
           RESOLUTION_1H_RETENTION: "168"
           RESOLUTION_1D_RETENTION: "30"
