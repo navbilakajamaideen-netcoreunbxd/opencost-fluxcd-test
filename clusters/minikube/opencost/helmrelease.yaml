@@ -12,7 +12,7 @@ spec:
         kind: HelmRepository
         name: opencost
         namespace: flux-system
-      version: '*'
+      version: '1.108.*'
   values:
     opencost:
       ui:
