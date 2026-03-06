@@ -28,3 +28,10 @@ spec:
         env:
           RESOLUTION_1H_RETENTION: "168"
           RESOLUTION_1D_RETENTION: "30"
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
