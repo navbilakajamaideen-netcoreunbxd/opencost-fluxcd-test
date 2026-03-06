@@ -29,7 +29,7 @@ spec:
           port: 9090
 
       exporter:
-        scrapeInterval: 1m
+        scrapeInterval: 15m
 
         env:
           RESOLUTION_1H_RETENTION: "168"
