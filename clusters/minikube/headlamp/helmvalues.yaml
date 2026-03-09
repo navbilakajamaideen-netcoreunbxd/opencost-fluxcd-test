@@ -15,10 +15,6 @@ data:
         cpu: 100m
         memory: 128Mi
     
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 1000
-    
     service:
       type: ClusterIP
       port: 80
