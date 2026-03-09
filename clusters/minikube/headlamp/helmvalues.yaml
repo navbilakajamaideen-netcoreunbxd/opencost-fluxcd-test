@@ -6,7 +6,7 @@ metadata:
 data:
   values.yaml: |
     replicaCount: 1
-    
+
     resources:
       limits:
         cpu: 200m
@@ -14,7 +14,16 @@ data:
       requests:
         cpu: 100m
         memory: 128Mi
-    
+
     service:
       type: ClusterIP
       port: 80
+
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - host: headlamp.local
+          paths:
+            - path: /
+              pathType: Prefix
