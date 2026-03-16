@@ -15,3 +15,17 @@ spec:
     kind: OCIRepository
     name: capacitor
     namespace: flux-system
+  # Add this patch to fix service account
+  patches:
+    - patch: |-
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: capacitor
+        spec:
+          template:
+            spec:
+              serviceAccountName: capacitor-readonly
+      target:
+        kind: Deployment
+        name: capacitor
