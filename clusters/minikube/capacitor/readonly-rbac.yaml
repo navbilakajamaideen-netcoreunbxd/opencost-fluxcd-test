@@ -9,6 +9,7 @@ kind: ClusterRole
 metadata:
   name: capacitor-readonly
 rules:
+# Flux CRDs
 - apiGroups:
   - source.toolkit.fluxcd.io
   resources:
@@ -64,24 +65,48 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - ""
+
+# Core Kubernetes resources (ADDED: events)
+- apiGroups: [""]
   resources:
   - namespaces
   - pods
   - services
   - configmaps
   - secrets
+  - events          # ← ADDED: Required for Flux events display
   verbs:
   - get
   - list
   - watch
-- apiGroups:
-  - apps
+
+# Apps resources
+- apiGroups: ["apps"]
   resources:
   - deployments
   - statefulsets
   - daemonsets
+  - replicasets
+  verbs:
+  - get
+  - list
+  - watch
+
+# Networking resources (ADDED: ingresses)
+- apiGroups: ["networking.k8s.io"]
+  resources:
+  - ingresses       # ← ADDED: Required for ingress display
+  - ingressclasses
+  verbs:
+  - get
+  - list
+  - watch
+
+# Optional: Add more if needed
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  - cronjobs
   verbs:
   - get
   - list
