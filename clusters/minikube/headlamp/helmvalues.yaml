@@ -19,6 +19,9 @@ data:
       type: ClusterIP
       port: 80
 
+    rbac:
+      create: true
+
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -26,4 +29,5 @@ data:
         - host: headlamp.local
           paths:
             - path: /
-              type: Prefix
+              pathType: Prefix
+              
