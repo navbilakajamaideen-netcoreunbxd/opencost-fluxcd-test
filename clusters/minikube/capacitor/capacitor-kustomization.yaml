@@ -1,3 +1,4 @@
+
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -15,3 +16,17 @@ spec:
     kind: OCIRepository
     name: capacitor
     namespace: flux-system
+  patches:
+    - patch: |-
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: capacitor
+          namespace: capacitor-system
+        spec:
+          template:
+            spec:
+              serviceAccountName: capacitor-readonly
+      target:
+        kind: Deployment
+        name: capacitor
