@@ -3,10 +3,8 @@ kind: HelmRelease
 metadata:
   name: opencost
   namespace: opencost
-
 spec:
   interval: 15m
-
   chart:
     spec:
       chart: opencost
@@ -15,26 +13,18 @@ spec:
         name: opencost
         namespace: flux-system
       version: ">=1.0.0"
-
   values:
     opencost:
       ui:
         baseUrl: /
-
       prometheus:
         internal:
           enabled: true
           namespaceName: monitoring
           serviceName: prometheus-kube-prometheus-prometheus
           port: 9090
-
       exporter:
         scrapeInterval: 15m
-
-        env:
-          RESOLUTION_1H_RETENTION: "168"
-          RESOLUTION_1D_RETENTION: "30"
-
         resources:
           requests:
             cpu: 100m

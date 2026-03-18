@@ -1,0 +1,315 @@
+# capacitor-deployment.yaml
+# ServiceAccount for Capacitor to access Flux resources
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: capacitor
+  namespace: flux-system
+---
+# ClusterRole granting READ-ONLY access to all required Flux CRDs and Kubernetes resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: capacitor
+rules:
+# ===== FLUX SOURCE CRDs =====
+- apiGroups: ["source.toolkit.fluxcd.io"]
+  resources:
+  - gitrepositories
+  - gitrepositories/status
+  - helmrepositories
+  - helmrepositories/status
+  - ocirepositories
+  - ocirepositories/status
+  - buckets
+  - buckets/status
+  - helmcharts
+  - helmcharts/status
+  - artifacts
+  verbs: ["get", "list", "watch"]
+
+# ===== FLUX KUSTOMIZE CRDs =====
+- apiGroups: ["kustomize.toolkit.fluxcd.io"]
+  resources:
+  - kustomizations
+  - kustomizations/status
+  - kustomizations/finalizers
+  verbs: ["get", "list", "watch"]
+
+# ===== FLUX HELM CRDs =====
+- apiGroups: ["helm.toolkit.fluxcd.io"]
+  resources:
+  - helmreleases
+  - helmreleases/status
+  - helmreleases/finalizers
+  - helmcharts
+  - helmcharts/status
+  verbs: ["get", "list", "watch"]
+
+# ===== FLUX NOTIFICATION CRDs =====
+- apiGroups: ["notification.toolkit.fluxcd.io"]
+  resources:
+  - providers
+  - providers/status
+  - alerts
+  - alerts/status
+  - receivers
+  - receivers/status
+  verbs: ["get", "list", "watch"]
+
+# ===== FLUX IMAGE CRDs =====
+- apiGroups: ["image.toolkit.fluxcd.io"]
+  resources:
+  - imagepolicies
+  - imagepolicies/status
+  - imagerepositories
+  - imagerepositories/status
+  - imageupdateautomations
+  - imageupdateautomations/status
+  verbs: ["get", "list", "watch"]
+
+# ===== FLUX TERRAFORM CRDs =====
+- apiGroups: ["infra.contrib.fluxcd.io"]
+  resources:
+  - terraforms
+  - terraforms/status
+  verbs: ["get", "list", "watch"]
+
+# ===== CORE KUBERNETES RESOURCES =====
+- apiGroups: [""]
+  resources:
+  - configmaps
+  - configmaps/status
+  - endpoints
+  - events
+  - limitranges
+  - namespaces
+  - namespaces/status
+  - nodes
+  - nodes/status
+  - nodes/proxy
+  - persistentvolumeclaims
+  - persistentvolumeclaims/status
+  - persistentvolumes
+  - persistentvolumes/status
+  - pods
+  - pods/log
+  - pods/status
+  - pods/proxy
+  - replicationcontrollers
+  - replicationcontrollers/status
+  - resourcequotas
+  - resourcequotas/status
+  - secrets
+  - serviceaccounts
+  - services
+  - services/status
+  - services/proxy
+  verbs: ["get", "list", "watch"]
+
+# ===== APPS RESOURCES =====
+- apiGroups: ["apps"]
+  resources:
+  - controllerrevisions
+  - daemonsets
+  - daemonsets/status
+  - deployments
+  - deployments/scale
+  - deployments/status
+  - replicasets
+  - replicasets/status
+  - statefulsets
+  - statefulsets/scale
+  - statefulsets/status
+  verbs: ["get", "list", "watch"]
+
+# ===== AUTOSCALING =====
+- apiGroups: ["autoscaling"]
+  resources:
+  - horizontalpodautoscalers
+  - horizontalpodautoscalers/status
+  verbs: ["get", "list", "watch"]
+
+# ===== BATCH =====
+- apiGroups: ["batch"]
+  resources:
+  - cronjobs
+  - cronjobs/status
+  - jobs
+  - jobs/status
+  verbs: ["get", "list", "watch"]
+
+# ===== NETWORKING =====
+- apiGroups: ["networking.k8s.io"]
+  resources:
+  - ingresses
+  - ingresses/status
+  - ingressclasses
+  - networkpolicies
+  verbs: ["get", "list", "watch"]
+
+# ===== DISCOVERY API (required for modern service discovery views) =====
+- apiGroups: ["discovery.k8s.io"]
+  resources:
+  - endpointslices
+  verbs: ["get", "list", "watch"]
+
+# ===== EVENTS API (newer events.k8s.io) =====
+- apiGroups: ["events.k8s.io"]
+  resources:
+  - events
+  verbs: ["get", "list", "watch"]
+
+# ===== STORAGE =====
+- apiGroups: ["storage.k8s.io"]
+  resources:
+  - csidrivers
+  - csinodes
+  - storageclasses
+  - volumeattachments
+  - csistoragecapacities
+  verbs: ["get", "list", "watch"]
+
+# ===== RBAC =====
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources:
+  - clusterrolebindings
+  - clusterroles
+  - rolebindings
+  - roles
+  verbs: ["get", "list", "watch"]
+
+# ===== METRICS =====
+- apiGroups: ["metrics.k8s.io"]
+  resources:
+  - nodes
+  - pods
+  verbs: ["get", "list", "watch"]
+
+# ===== POLICY =====
+- apiGroups: ["policy"]
+  resources:
+  - poddisruptionbudgets
+  - poddisruptionbudgets/status
+  verbs: ["get", "list", "watch"]
+
+# ===== API EXTENSIONS =====
+- apiGroups: ["apiextensions.k8s.io"]
+  resources:
+  - customresourcedefinitions
+  - customresourcedefinitions/status
+  verbs: ["get", "list", "watch"]
+
+# ===== COORDINATION (leader election info) =====
+- apiGroups: ["coordination.k8s.io"]
+  resources:
+  - leases
+  verbs: ["get", "list", "watch"]
+
+# ===== ADMISSION REGISTRATION (for webhook info) =====
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources:
+  - mutatingwebhookconfigurations
+  - validatingwebhookconfigurations
+  verbs: ["get", "list", "watch"]
+---
+# Bind the ClusterRole to the Capacitor ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: capacitor
+subjects:
+  - kind: ServiceAccount
+    name: capacitor
+    namespace: flux-system
+roleRef:
+  kind: ClusterRole
+  name: capacitor
+  apiGroup: rbac.authorization.k8s.io
+---
+# The Capacitor deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capacitor
+  namespace: flux-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: capacitor
+  template:
+    metadata:
+      labels:
+        app: capacitor
+    spec:
+      serviceAccountName: capacitor
+      containers:
+        - name: capacitor
+          image: ghcr.io/gimlet-io/capacitor:v0.4.8
+          ports:
+            - containerPort: 9000
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          # Optional: Enable debug logging if UI still shows blank pages
+          # env:
+          # - name: LOG_LEVEL
+          #   value: "debug"
+---
+# Service to expose the Capacitor UI
+apiVersion: v1
+kind: Service
+metadata:
+  name: capacitor
+  namespace: flux-system
+spec:
+  selector:
+    app: capacitor
+  ports:
+    - port: 9000
+      targetPort: http
+      protocol: TCP
+      name: http
+  type: ClusterIP
+---
+# Ingress to expose Capacitor - no auth
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: capacitor
+  namespace: flux-system
+  annotations:
+    # Optional: Add timeout annotations if API calls are slow
+    # nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    # nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: capacitor.internal.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: capacitor
+                port:
+                  number: 9000
