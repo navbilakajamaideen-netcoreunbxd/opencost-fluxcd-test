@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  capacitor:
+  - apiVersion: v2
+    appVersion: v0.4.3
+    created: "2026-03-30T20:47:13.333466369+05:30"
+    description: Helm chart for Capacitor service
+    digest: 5b090e762ceb445307729bc9e80956bc09146f9f078c5848d6c0f21539f44cf7
+    name: capacitor
+    type: application
+    urls:
+    - https://my-org.github.io/helm-charts/capacitor-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-03-30T20:47:13.331931324+05:30"
