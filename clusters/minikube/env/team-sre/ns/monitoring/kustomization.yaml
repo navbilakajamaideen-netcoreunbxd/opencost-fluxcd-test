@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - ../../service/capacitor/capacitor_release.yaml
+
+configMapGenerator:
+  - name: capacitor-cluster-values
+    files:
+      - values.yaml=../../service/capacitor/capacitor.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true

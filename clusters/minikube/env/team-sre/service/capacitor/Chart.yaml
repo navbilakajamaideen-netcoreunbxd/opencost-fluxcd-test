@@ -1,6 +1,0 @@
-apiVersion: v2
-name: capacitor
-description: Helm chart for Capacitor service
-version: 0.1.0
-appVersion: "v0.4.3"
-type: application

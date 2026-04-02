@@ -2,10 +2,24 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: capacitor
-  namespace: flux-system
+  namespace: monitoring
+  annotations:
+    fluxcd.io/automated: "true"
+
 spec:
+  interval: 10m
+
   chart:
-    path: ./service/capacitor/capacitor-chart   
+    spec:
+      reconcileStrategy: Revision
+      chart: ./unx_resources/team-platform/infra/capacitor
+      sourceRef:
+        kind: GitRepository
+        name: capacitor-helm-chart
+        namespace: flux-system
+
+  targetNamespace: monitoring
+
   valuesFrom:
     - kind: ConfigMap
-      name: capacitor-values
+      name: capacitor-cluster-values

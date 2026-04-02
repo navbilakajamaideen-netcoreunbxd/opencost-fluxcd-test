@@ -1,0 +1,5 @@
+clusterName: local-dev # or your cluster name
+
+ingress:
+  enabled: true
+  host: capacitor.local
