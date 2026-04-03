@@ -12,7 +12,7 @@ spec:
   chart:
     spec:
       reconcileStrategy: Revision
-      chart: ./unx_resources/team-platform/infra/capacitor # ✅ CORRECT PATH
+      chart: ./unx_resources/team-platform/infra/capacitor 
       sourceRef:
         kind: GitRepository
         name: capacitor-helm-chart
