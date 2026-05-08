@@ -1,6 +1,8 @@
 clusterName: local-dev # or your cluster name
 
-
+image:
+  repository: ghcr.io/gimlet-io/capacitor
+  tag: 0.14.0
 
 ingress:
   enabled: true
