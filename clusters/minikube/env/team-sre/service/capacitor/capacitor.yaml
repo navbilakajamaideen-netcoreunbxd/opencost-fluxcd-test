@@ -2,7 +2,7 @@ clusterName: local-dev # or your cluster name
 
 image:
   repository: ghcr.io/gimlet-io/capacitor
-  tag: next-v0.5.1
+  tag: latest
 
 ingress:
   enabled: true
