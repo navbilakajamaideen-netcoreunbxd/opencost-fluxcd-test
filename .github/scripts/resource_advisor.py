@@ -103,7 +103,6 @@ def main():
         except Exception as e:
             print(f"Warning: cannot parse {filepath}: {e}", file=sys.stderr)
             continue
-
         resources_found = find_resources(data or {})
 
         # Only comment on files that actually have a resources: block
