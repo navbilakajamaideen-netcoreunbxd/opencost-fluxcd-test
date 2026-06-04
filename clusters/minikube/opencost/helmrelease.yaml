@@ -27,8 +27,8 @@ spec:
         scrapeInterval: 15m
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 120m
+            memory: 150Mi
           limits:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 730m
+            memory: 850Mi
