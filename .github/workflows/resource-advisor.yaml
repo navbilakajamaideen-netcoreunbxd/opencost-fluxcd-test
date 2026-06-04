@@ -1,0 +1,49 @@
+name: Resource Advisor
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  advise:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/suggest-resources')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: Install PyYAML
+        run: pip3 install pyyaml --break-system-packages
+
+      - name: Run advisor
+        run: |
+          python3 .github/scripts/resource_advisor.py \
+            --base origin/${{ github.event.pull_request.base.ref }} \
+            --head HEAD \
+            --output /tmp/suggestion.md
+
+      - name: Post comment
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('/tmp/suggestion.md', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
