@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-Resource Advisor Bot
-Scans changed helmvalues.yaml files in a PR.
-- If resources block EXISTS  → shows current values + ratio suggestions
-- If resources block MISSING → suggests a starter block with 3 ratios
-"""
-
 import argparse, subprocess, sys, os
 import yaml
 
@@ -36,7 +29,6 @@ def format_memory(b):
     return str(b)
 
 def changed_yaml_files(base, head):
-    """Return ALL changed YAML files in the PR — no filename filter."""
     out = subprocess.run(
         ["git", "diff", "--name-only", "--diff-filter=ACM", base, head],
         capture_output=True, text=True, check=True
@@ -44,7 +36,6 @@ def changed_yaml_files(base, head):
     return [f for f in out if f.endswith((".yaml", ".yml")) and os.path.exists(f)]
 
 def find_resources(data, path=""):
-    """Recursively find all 'resources' keys including inside embedded YAML strings."""
     results = []
     if not isinstance(data, dict):
         return results
@@ -53,6 +44,7 @@ def find_resources(data, path=""):
         if k == "resources" and isinstance(v, dict):
             results.append((current_path, v))
         elif isinstance(v, str) and "\n" in v:
+            # Parse embedded YAML string inside ConfigMap
             try:
                 embedded = yaml.safe_load(v)
                 if isinstance(embedded, dict):
@@ -104,8 +96,6 @@ def main():
             print(f"Warning: cannot parse {filepath}: {e}", file=sys.stderr)
             continue
         resources_found = find_resources(data or {})
-
-        # Only comment on files that actually have a resources: block
         if resources_found:
             sections.append(suggest_existing(filepath, resources_found))
 
