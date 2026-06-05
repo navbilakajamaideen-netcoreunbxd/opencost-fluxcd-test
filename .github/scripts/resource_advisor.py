@@ -102,6 +102,7 @@ def changed_yaml_files(base, head):
         for f in files
         if f.endswith((".yaml", ".yml"))
         and os.path.exists(f)
+        and "kustomization" not in f.lower()  # skip kustomize file lists
     ]
 
 
@@ -285,6 +286,9 @@ def main():
     for file_path in files:
 
         try:
+            # ✅ CHANGE 1: open the full file and scan entirely
+            # even if only one line changed (e.g. image tag),
+            # the whole file is parsed to find all resource blocks
             with open(file_path) as f:
                 docs = list(
                     yaml.safe_load_all(f)
@@ -316,6 +320,12 @@ def main():
 
         total_valid += valid
         total_invalid += invalid
+
+    # ✅ CHANGE 2: only write the output file if there are invalid ratios
+    # if everything is valid, no comment will be posted on the PR
+    if total_invalid == 0:
+        print("All resource ratios are valid. No comment will be posted.")
+        return
 
     report = []
 

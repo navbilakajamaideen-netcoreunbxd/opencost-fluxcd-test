@@ -30,12 +30,19 @@ jobs:
             --head HEAD \
             --output /tmp/suggestion.md
 
+      
       - name: Post comment
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
+
+            if (!fs.existsSync('/tmp/suggestion.md')) {
+              console.log('All ratios valid — no comment posted.');
+              return;
+            }
+
             const body = fs.readFileSync('/tmp/suggestion.md', 'utf8');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
