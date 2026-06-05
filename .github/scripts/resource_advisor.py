@@ -286,9 +286,7 @@ def main():
     for file_path in files:
 
         try:
-            # ✅ CHANGE 1: open the full file and scan entirely
-            # even if only one line changed (e.g. image tag),
-            # the whole file is parsed to find all resource blocks
+            
             with open(file_path) as f:
                 docs = list(
                     yaml.safe_load_all(f)
@@ -316,7 +314,9 @@ def main():
             resources_found
         )
 
-        sections.append(section)
+        
+        if invalid > 0:
+            sections.append(section)
 
         total_valid += valid
         total_invalid += invalid
