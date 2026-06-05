@@ -9,11 +9,11 @@ data:
 
     resources:
       limits:
-        cpu: 256m
+        cpu: 200m
         memory: 256Mi
       requests:
-        cpu: 512m
-        memory: 512Mi
+        cpu: 700m
+        memory: 1000Mi
 
     service:
       type: ClusterIP
