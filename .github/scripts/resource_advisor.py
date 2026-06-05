@@ -169,6 +169,10 @@ def validate_ratio(request, limit):
     if request is None or limit is None:
         return None
 
+   
+    if limit < request:
+        return "limit-less-than-request"
+
     ratio = round(limit / request, 2)
 
     if ratio == 2:
@@ -225,7 +229,12 @@ def build_section(filepath, resources_found):
 
             ratio = validate_ratio(req, lim)
 
-            if ratio:
+            if ratio == "limit-less-than-request":
+                # 🚨 limit is lower than request — kubernetes will reject pod
+                # suggestions show what request SHOULD be (limit / multiplier)
+                status = "🚨 Limit < Request"
+                invalid += 1
+            elif ratio:
                 status = f"✅ {ratio}"
                 valid += 1
             else:
@@ -239,7 +248,12 @@ def build_section(filepath, resources_found):
 
             for multiplier in RATIOS.values():
 
-                if req is not None:
+                if ratio == "limit-less-than-request" and lim is not None:
+        
+                    suggestions.append(
+                        formatter(lim / multiplier)
+                    )
+                elif req is not None:
                     suggestions.append(
                         formatter(req * multiplier)
                     )
@@ -314,15 +328,14 @@ def main():
             resources_found
         )
 
-        
+       
         if invalid > 0:
             sections.append(section)
 
         total_valid += valid
         total_invalid += invalid
 
-    # ✅ CHANGE 2: only write the output file if there are invalid ratios
-    # if everything is valid, no comment will be posted on the PR
+    
     if total_invalid == 0:
         print("All resource ratios are valid. No comment will be posted.")
         return
