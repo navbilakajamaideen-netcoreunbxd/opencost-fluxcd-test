@@ -1,4 +1,3 @@
-bashcat > /home/navbila/opencost-fluxcd-test/tests/test-all-cases.yaml << 'EOF'
 # ══════════════════════════════════════════════
 # Resource Advisor — All Test Cases
 # ══════════════════════════════════════════════
