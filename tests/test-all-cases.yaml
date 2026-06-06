@@ -4,7 +4,7 @@
 
 ---
 # TEST 1: exact 1:2 — ✅ valid
-apiVersion: apps/v1
+apiVersion: apps/v2
 kind: Deployment
 metadata:
   name: test-exact-1-2
