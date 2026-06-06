@@ -102,7 +102,7 @@ def changed_yaml_files(base, head):
         for f in files
         if f.endswith((".yaml", ".yml"))
         and os.path.exists(f)
-        and "kustomization" not in f.lower()  # skip kustomize file lists
+        and "kustomization" not in f.lower()
     ]
 
 
@@ -164,27 +164,35 @@ def find_resources(data, path=""):
 # Ratio Validation
 # --------------------------
 
-def validate_ratio(request, limit):
+# FIXED: Old code only accepted EXACT ratios (1:2, 1:4, 1:8).
+# Any value like 550m limit / 130m request = 4.23 was flagged as ❌ Non-standard.
+# New logic:
+#   - If limit < request         → 🚨 always invalid (Kubernetes will reject the pod)
+#   - If ratio is within 1.5–10  → ✅ Valid (flexible, real-world friendly)
+#   - If ratio > 10              → ⚠️  Warn (wasteful but not broken)
+#   - If ratio < 1.5             → ❌ Too tight (limit barely above request, risky)
+# The suggestion columns still show what the nearest standard ratio would look like.
 
+MIN_VALID_RATIO = 1.5   # limit must be at least 1.5× the request
+MAX_VALID_RATIO = 10.0  # beyond 10× is considered wasteful
+
+
+def validate_ratio(request, limit):
     if request is None or limit is None:
         return None
 
-   
     if limit < request:
         return "limit-less-than-request"
 
-    ratio = round(limit / request, 2)
+    ratio = limit / request
 
-    if ratio == 2:
-        return "1:2"
+    if ratio < MIN_VALID_RATIO:
+        return "too-tight"          # e.g. limit is only 1.1× request
 
-    if ratio == 4:
-        return "1:4"
+    if ratio > MAX_VALID_RATIO:
+        return "too-loose"          # e.g. limit is 20× request — wasteful
 
-    if ratio == 8:
-        return "1:8"
-
-    return None
+    return "valid"                  # anything between 1.5× and 10× is fine
 
 
 # --------------------------
@@ -199,11 +207,11 @@ def build_section(filepath, resources_found):
     lines.append("")
 
     lines.append(
-        "| Resource | Request | Limit | Status | 1:2 | 1:4 | 1:8 |"
+        "| Resource | Request | Limit | Ratio | Status | 1:2 suggestion | 1:4 suggestion | 1:8 suggestion |"
     )
 
     lines.append(
-        "|---|---|---|---|---|---|---|"
+        "|---|---|---|---|---|---|---|---|"
     )
 
     valid = 0
@@ -227,36 +235,51 @@ def build_section(filepath, resources_found):
             lim = parser(limits.get(key)) \
                 if limits.get(key) else None
 
-            ratio = validate_ratio(req, lim)
+            result = validate_ratio(req, lim)
 
-            if ratio == "limit-less-than-request":
-                # 🚨 limit is lower than request — kubernetes will reject pod
-                # suggestions show what request SHOULD be (limit / multiplier)
+            # Calculate actual ratio for display
+            if req and lim and req > 0:
+                actual_ratio = round(lim / req, 2)
+                ratio_str = f"1:{actual_ratio}"
+            else:
+                ratio_str = "—"
+
+            if result == "limit-less-than-request":
+                # 🚨 Kubernetes will reject the pod outright
                 status = "🚨 Limit < Request"
                 invalid += 1
-            elif ratio:
-                status = f"✅ {ratio}"
-                valid += 1
-            else:
-                status = "❌ Non-standard"
+
+            elif result == "too-tight":
+                # ❌ Limit is too close to request — pod will be OOMKilled or throttled easily
+                status = "❌ Too tight"
                 invalid += 1
+
+            elif result == "too-loose":
+                # ⚠️ Limit is way higher than request — wastes cluster resources
+                status = "⚠️ Too loose (wasteful)"
+                invalid += 1
+
+            elif result == "valid":
+                # ✅ Ratio is in a healthy range
+                status = "✅ Valid"
+                valid += 1
+
+            else:
+                status = "—"
 
             req_str = formatter(req) if req else "—"
             lim_str = formatter(lim) if lim else "—"
 
+            # Suggestion columns: show what standard ratios would look like
+            # If limit < request, suggest based on limit (what request should be)
+            # Otherwise suggest based on request (what limit could be)
             suggestions = []
 
             for multiplier in RATIOS.values():
-
-                if ratio == "limit-less-than-request" and lim is not None:
-        
-                    suggestions.append(
-                        formatter(lim / multiplier)
-                    )
+                if result == "limit-less-than-request" and lim is not None:
+                    suggestions.append(formatter(lim / multiplier))
                 elif req is not None:
-                    suggestions.append(
-                        formatter(req * multiplier)
-                    )
+                    suggestions.append(formatter(req * multiplier))
                 else:
                     suggestions.append("—")
 
@@ -264,6 +287,7 @@ def build_section(filepath, resources_found):
                 f"| `{path}` {label} "
                 f"| `{req_str}` "
                 f"| `{lim_str}` "
+                f"| `{ratio_str}` "
                 f"| {status} "
                 f"| `{suggestions[0]}` "
                 f"| `{suggestions[1]}` "
@@ -300,7 +324,7 @@ def main():
     for file_path in files:
 
         try:
-            
+
             with open(file_path) as f:
                 docs = list(
                     yaml.safe_load_all(f)
@@ -328,14 +352,12 @@ def main():
             resources_found
         )
 
-       
         if invalid > 0:
             sections.append(section)
 
         total_valid += valid
         total_invalid += invalid
 
-    
     if total_invalid == 0:
         print("All resource ratios are valid. No comment will be posted.")
         return
@@ -349,6 +371,11 @@ def main():
     )
     report.append(
         f"❌ Invalid Ratios: **{total_invalid}**"
+    )
+    report.append("")
+    report.append(
+        "> ℹ️ A ratio is **valid** when `limit` is between **1.5×** and **10×** the `request`."
+        " The suggestion columns show what standard 1:2 / 1:4 / 1:8 limits would look like."
     )
     report.append("")
 
