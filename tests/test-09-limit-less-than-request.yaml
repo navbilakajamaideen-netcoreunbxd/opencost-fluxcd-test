@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-limit-less-than-request
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
