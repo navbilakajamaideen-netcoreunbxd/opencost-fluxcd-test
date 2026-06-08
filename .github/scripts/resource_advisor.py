@@ -6,6 +6,10 @@ import sys
 import os
 import yaml
 
+# --------------------------
+# CPU:Memory Ratios
+# 1 core CPU : X Gi Memory
+# --------------------------
 RATIOS = {
     "1:2": 2,
     "1:4": 4,
@@ -21,14 +25,13 @@ def parse_cpu(value):
         return None
     value = str(value).strip()
     if value.endswith("m"):
-        return float(value[:-1])
-    return float(value) * 1000
+        return float(value[:-1]) / 1000  # convert to cores
+    return float(value)
 
 def format_cpu(value):
-    value = round(value)
-    if value >= 1000 and value % 1000 == 0:
-        return str(value // 1000)
-    return f"{value}m"
+    if value < 1:
+        return f"{round(value * 1000)}m"
+    return str(round(value))
 
 # --------------------------
 # Memory
@@ -108,15 +111,15 @@ def find_resources(data, path=""):
     return results
 
 
-
-def validate_ratio(request, limit):
-    if request is None or limit is None:
+def validate_cpu_memory_ratio(cpu_cores, memory_bytes):
+    if cpu_cores is None or memory_bytes is None:
         return None, None
 
-    if limit < request:
-        return "limit-less-than-request", None
+    if cpu_cores <= 0:
+        return None, None
 
-    ratio = limit / request
+    memory_gi = memory_bytes / 1024**3
+    ratio = memory_gi / cpu_cores
 
     if 2.0 <= ratio < 3.0:
         return "valid", "1:2"
@@ -125,11 +128,23 @@ def validate_ratio(request, limit):
     elif 8.0 <= ratio < 9.0:
         return "valid", "1:8"
     elif ratio < 2.0:
-        return "too-tight", None
+        return "too-low", None
     elif ratio >= 9.0:
-        return "too-loose", None
+        return "too-high", None
     else:
         return "not-standard", None
+
+# --------------------------
+# Suggest memory based on CPU
+# CPU stays fixed, only memory changes
+# --------------------------
+
+def suggest_memory(cpu_cores):
+    suggestions = {}
+    for ratio_name, multiplier in RATIOS.items():
+        memory_bytes = cpu_cores * multiplier * 1024**3
+        suggestions[ratio_name] = format_memory(int(memory_bytes))
+    return suggestions
 
 # --------------------------
 # Markdown Generation
@@ -139,70 +154,114 @@ def build_section(filepath, resources_found):
     lines = []
     lines.append(f"### 📄 `{filepath}`")
     lines.append("")
-    lines.append("| Resource | Request | Limit | Ratio | Status | 1:2 limit | 1:4 limit | 1:8 limit |")
-    lines.append("|---|---|---|---|---|---|---|---|")
 
-    valid = 0
+    valid   = 0
     invalid = 0
 
     for path, resource in resources_found:
         requests = resource.get("requests", {}) or {}
         limits   = resource.get("limits",   {}) or {}
 
-        for label, key, parser, formatter in [
-            ("CPU",    "cpu",    parse_cpu,    format_cpu),
-            ("Memory", "memory", parse_memory, format_memory),
-        ]:
-            req = parser(requests.get(key)) if requests.get(key) else None
-            lim = parser(limits.get(key))   if limits.get(key)   else None
+        # Parse CPU and Memory for requests
+        req_cpu = parse_cpu(requests.get("cpu"))
+        req_mem = parse_memory(requests.get("memory"))
 
-            result, nearest = validate_ratio(req, lim)
+        # Parse CPU and Memory for limits
+        lim_cpu = parse_cpu(limits.get("cpu"))
+        lim_mem = parse_memory(limits.get("memory"))
 
-            # Actual ratio string
-            if req and lim and req > 0:
-                ratio_str = f"1:{round(lim / req, 2)}"
-            else:
-                ratio_str = "—"
+        # Validate requests CPU:Memory ratio
+        req_result, req_nearest = validate_cpu_memory_ratio(req_cpu, req_mem)
 
-            # Status
-            if result == "limit-less-than-request":
-                status = "🚨 Limit < Request"
-                invalid += 1
-            elif result == "too-tight":
-                status = "❌ Too tight (ratio < 1:2)"
-                invalid += 1
+        # Validate limits CPU:Memory ratio
+        lim_result, lim_nearest = validate_cpu_memory_ratio(lim_cpu, lim_mem)
+
+        # Actual ratio strings
+        if req_cpu and req_mem:
+            req_ratio_str = f"1:{round((req_mem / 1024**3) / req_cpu, 2)}"
+        else:
+            req_ratio_str = "—"
+
+        if lim_cpu and lim_mem:
+            lim_ratio_str = f"1:{round((lim_mem / 1024**3) / lim_cpu, 2)}"
+        else:
+            lim_ratio_str = "—"
+
+        # Status for requests
+        def get_status(result, nearest):
+            if result == "valid":
+                return f"✅ Near {nearest}"
+            elif result == "too-low":
+                return "❌ Memory too low for CPU"
+            elif result == "too-high":
+                return "⚠️ Memory too high for CPU"
             elif result == "not-standard":
-                status = "❌ Not standard (use 1:2, 1:4 or 1:8)"
-                invalid += 1
-            elif result == "too-loose":
-                status = "⚠️ Too loose (ratio > 1:8)"
-                invalid += 1
-            elif result == "valid":
-                status = f"✅ Near {nearest}"
-                valid += 1
-            else:
-                status = "—"
+                return "❌ Not standard (use 1:2, 1:4 or 1:8)"
+            return "—"
 
-            req_str = formatter(req) if req else "—"
-            lim_str = formatter(lim) if lim else "—"
+        req_status = get_status(req_result, req_nearest)
+        lim_status = get_status(lim_result, lim_nearest)
 
-            # Suggestion columns — always based on request
-            suggestions = []
-            for mult in RATIOS.values():
-                suggestions.append(
-                    f"`{formatter(req * mult)}`" if req else "—"
-                )
+        # Count valid/invalid
+        if req_result == "valid":
+            valid += 1
+        elif req_result in ("too-low", "too-high", "not-standard"):
+            invalid += 1
 
-            lines.append(
-                f"| `{path}` {label} "
-                f"| `{req_str}` "
-                f"| `{lim_str}` "
-                f"| `{ratio_str}` "
-                f"| {status} "
-                f"| {suggestions[0]} "
-                f"| {suggestions[1]} "
-                f"| {suggestions[2]} |"
-            )
+        if lim_result == "valid":
+            valid += 1
+        elif lim_result in ("too-low", "too-high", "not-standard"):
+            invalid += 1
+
+        # Memory suggestions based on CPU (CPU stays fixed)
+        req_suggestions = suggest_memory(req_cpu) if req_cpu else None
+        lim_suggestions = suggest_memory(lim_cpu) if lim_cpu else None
+
+        # Requests table
+        lines.append(f"#### `{path}` — Requests")
+        lines.append("")
+        lines.append("| CPU (fixed) | Memory | CPU:Memory Ratio | Status | 1:2 memory | 1:4 memory | 1:8 memory |")
+        lines.append("|---|---|---|---|---|---|---|")
+
+        req_cpu_str = format_cpu(req_cpu) if req_cpu else "—"
+        req_mem_str = format_memory(req_mem) if req_mem else "—"
+
+        lines.append(
+            f"| `{req_cpu_str}` "
+            f"| `{req_mem_str}` "
+            f"| `{req_ratio_str}` "
+            f"| {req_status} "
+            f"| `{req_suggestions['1:2']}` "
+            f"| `{req_suggestions['1:4']}` "
+            f"| `{req_suggestions['1:8']}` |"
+            if req_suggestions else
+            f"| `{req_cpu_str}` | `{req_mem_str}` | `{req_ratio_str}` | {req_status} | — | — | — |"
+        )
+
+        lines.append("")
+
+        # Limits table
+        lines.append(f"#### `{path}` — Limits")
+        lines.append("")
+        lines.append("| CPU (fixed) | Memory | CPU:Memory Ratio | Status | 1:2 memory | 1:4 memory | 1:8 memory |")
+        lines.append("|---|---|---|---|---|---|---|")
+
+        lim_cpu_str = format_cpu(lim_cpu) if lim_cpu else "—"
+        lim_mem_str = format_memory(lim_mem) if lim_mem else "—"
+
+        lines.append(
+            f"| `{lim_cpu_str}` "
+            f"| `{lim_mem_str}` "
+            f"| `{lim_ratio_str}` "
+            f"| {lim_status} "
+            f"| `{lim_suggestions['1:2']}` "
+            f"| `{lim_suggestions['1:4']}` "
+            f"| `{lim_suggestions['1:8']}` |"
+            if lim_suggestions else
+            f"| `{lim_cpu_str}` | `{lim_mem_str}` | `{lim_ratio_str}` | {lim_status} | — | — | — |"
+        )
+
+        lines.append("")
 
     return "\n".join(lines), valid, invalid
 
@@ -247,7 +306,7 @@ def main():
             sections.append(section)
 
     if total_invalid == 0:
-        print("All ratios are standard. No comment posted.", file=sys.stderr)
+        print("All CPU:Memory ratios are standard. No comment posted.", file=sys.stderr)
         return
 
     report = [
@@ -256,7 +315,8 @@ def main():
         f"✅ Standard Ratios: **{total_valid}**",
         f"❌ Non-standard Ratios: **{total_invalid}**",
         "",
-        "> **Valid ranges:** `1:2` (2.0–2.99×) · `1:4` (4.0–4.99×) · `1:8` (8.0–8.99×)",
+        "> **CPU stays fixed. Only Memory needs to be adjusted.**",
+        "> **Valid CPU:Memory ranges:** `1:2` (2.0–2.99×) · `1:4` (4.0–4.99×) · `1:8` (8.0–8.99×)",
         "> Please fix non-standard ratios before merging.",
         "",
     ]
@@ -266,15 +326,19 @@ def main():
     report.append(
         "\n---\n"
         "<details><summary>ℹ️ How to fix</summary>\n\n"
-        "Pick a standard ratio and update your `resources:` block:\n"
+        "CPU stays unchanged. Only update the **memory** to match a standard CPU:Memory ratio:\n"
         "```yaml\n"
+        "# Example: cpu = 500m (0.5 cores)\n"
+        "# 1:2 → memory = 1Gi  (0.5 × 2)\n"
+        "# 1:4 → memory = 2Gi  (0.5 × 4)\n"
+        "# 1:8 → memory = 4Gi  (0.5 × 8)\n"
         "resources:\n"
         "  requests:\n"
-        "    cpu: 200m\n"
-        "    memory: 256Mi\n"
+        "    cpu: 500m      # never changes\n"
+        "    memory: 2Gi    # adjust this\n"
         "  limits:\n"
-        "    cpu: 400m      # 1:2 → 400m | 1:4 → 800m | 1:8 → 1600m\n"
-        "    memory: 512Mi  # 1:2 → 512Mi | 1:4 → 1Gi | 1:8 → 2Gi\n"
+        "    cpu: 500m      # never changes\n"
+        "    memory: 2Gi    # adjust this\n"
         "```\n"
         "</details>"
     )
