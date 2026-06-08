@@ -8,8 +8,8 @@ metadata:
         - name: app
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 500m
+              memory: 4Gi
             limits:
-              cpu: 800m
-              memory: 1Gi
+              cpu: 500m
+              memory: 4Gi

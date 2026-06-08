@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-9x-too-loose
+  name: test-heavy-1-4
   template:
     spec:
       containers:
         - name: app
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: "2"
+              memory: 8Gi
             limits:
-              cpu: 900m
-              memory: 1152Mi
+              cpu: "2"
+              memory: 8Gi

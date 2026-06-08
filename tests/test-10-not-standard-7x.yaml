@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-7-3x-not-standard
+  name: test-7x-not-standard
   template:
     spec:
       containers:
         - name: app
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 500m
+              memory: 3584Mi
             limits:
-              cpu: 730m
-              memory: 930Mi
+              cpu: 500m
+              memory: 3584Mi

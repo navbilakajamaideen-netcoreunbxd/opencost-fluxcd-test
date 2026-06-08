@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-1-1-too-tight
+  name: test-3x-not-standard
   template:
     spec:
       containers:
         - name: app
           resources:
             requests:
-              cpu: 300m
-              memory: 256Mi
+              cpu: 500m
+              memory: 1536Mi
             limits:
-              cpu: 300m
-              memory: 256Mi
+              cpu: 500m
+              memory: 1536Mi

@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-limit-less-than-request
+  name: test-5x-not-standard
   template:
     spec:
       containers:
@@ -9,7 +9,7 @@ metadata:
           resources:
             requests:
               cpu: 500m
-              memory: 512Mi
+              memory: 2560Mi
             limits:
-              cpu: 200m
-              memory: 256Mi
+              cpu: 500m
+              memory: 2560Mi
