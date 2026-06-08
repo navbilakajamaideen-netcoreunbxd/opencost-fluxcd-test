@@ -67,17 +67,10 @@ def parse_memory(value):
 # --------------------------
 
 def format_memory(value):
-    if value >= GB:
-        gb = value / GB
-
-        if gb.is_integer():
-            return f"{int(gb)}GB"
-
-        return f"{gb:.1f}GB"
-
-    if value >= MB:
-        return f"{round(value / MB)}MB"
-
+    if value >= 1000**3:
+        return f"{round(value / 1000**3)}GB"
+    if value >= 1000**2:
+        return f"{round(value / 1000**2)}MB"
     return str(value)
 
 # --------------------------
