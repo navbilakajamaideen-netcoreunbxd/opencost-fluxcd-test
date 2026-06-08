@@ -4,7 +4,7 @@ metadata:
   name: headlamp
   namespace: headlamp
 spec:
-  interval: 10m
+  interval: 15m
   chart:
     spec:
       chart: headlamp
