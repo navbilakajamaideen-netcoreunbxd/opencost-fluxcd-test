@@ -35,7 +35,9 @@ def parse_cpu(value):
 def format_cpu(value):
     if value < 1:
         return f"{round(value * 1000)}m"
-    return str(round(value))
+    if value == int(value):
+        return str(int(value))
+    return f"{round(value * 1000)}m"
 
 # --------------------------
 # Memory — parse to bytes
@@ -67,8 +69,8 @@ def parse_memory(value):
 # --------------------------
 
 def format_memory(value):
-    if value >= 1000**3:
-        return f"{round(value / 1000**3)}GB"
+    if value >= 1000**3 and value % 1000**3 == 0:
+        return f"{value // 1000**3}GB"
     if value >= 1000**2:
         return f"{round(value / 1000**2)}MB"
     return str(value)
