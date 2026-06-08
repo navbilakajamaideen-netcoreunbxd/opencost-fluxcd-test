@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-near-1-8
+  name: test-06-near-1-8
   template:
     spec:
       containers:
         - name: app
           resources:
             requests:
-              cpu: 500m
-              memory: 4352Mi
+              cpu: 800m
+              memory: 6963Mi
             limits:
-              cpu: 500m
-              memory: 4352Mi
+              cpu: 1600m
+              memory: 13926Mi

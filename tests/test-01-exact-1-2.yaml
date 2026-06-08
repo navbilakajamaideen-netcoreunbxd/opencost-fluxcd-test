@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-exact-1-2
+  name: test-01-exact-1-2
   template:
     spec:
       containers:
@@ -11,5 +11,5 @@ metadata:
               cpu: 500m
               memory: 1Gi
             limits:
-              cpu: 500m
-              memory: 1Gi
+              cpu: 1000m
+              memory: 2Gi

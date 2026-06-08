@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-exact-1-4
+  name: test-02-exact-1-4
   template:
     spec:
       containers:
         - name: app
           resources:
             requests:
-              cpu: 500m
-              memory: 2Gi
+              cpu: 750m
+              memory: 3Gi
             limits:
-              cpu: 500m
-              memory: 2Gi
+              cpu: 1500m
+              memory: 6Gi

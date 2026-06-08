@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-memory-too-high
+  name: test-11-memory-too-high
   template:
     spec:
       containers:
         - name: app
           resources:
             requests:
-              cpu: 500m
-              memory: 5Gi
+              cpu: 250m
+              memory: 3Gi
             limits:
               cpu: 500m
-              memory: 5Gi
+              memory: 6Gi

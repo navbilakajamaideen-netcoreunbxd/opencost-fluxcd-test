@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-heavy-1-8
+  name: test-13-heavy-1-8
   template:
     spec:
       containers:
@@ -11,5 +11,5 @@ metadata:
               cpu: "2"
               memory: 16Gi
             limits:
-              cpu: "2"
-              memory: 16Gi
+              cpu: "4"
+              memory: 32Gi

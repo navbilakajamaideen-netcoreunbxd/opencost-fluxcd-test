@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-memory-too-low
+  name: test-07-memory-too-low
   template:
     spec:
       containers:
         - name: app
           resources:
             requests:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 300m
+              memory: 256Mi
             limits:
-              cpu: 500m
+              cpu: 600m
               memory: 512Mi
