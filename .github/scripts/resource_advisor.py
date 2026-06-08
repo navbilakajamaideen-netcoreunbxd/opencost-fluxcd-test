@@ -8,13 +8,17 @@ import yaml
 
 # --------------------------
 # CPU:Memory Ratios
-# 1 core CPU : X Gi Memory
+# 1 core CPU : X GB Memory
 # --------------------------
 RATIOS = {
     "1:2": 2,
     "1:4": 4,
     "1:8": 8
 }
+
+# GB = 1000^3 bytes 
+GB = 1000**3
+MB = 1000**2
 
 # --------------------------
 # CPU
@@ -25,7 +29,7 @@ def parse_cpu(value):
         return None
     value = str(value).strip()
     if value.endswith("m"):
-        return float(value[:-1]) / 1000  # convert to cores
+        return float(value[:-1]) / 1000  
     return float(value)
 
 def format_cpu(value):
@@ -34,7 +38,7 @@ def format_cpu(value):
     return str(round(value))
 
 # --------------------------
-# Memory
+# Memory — parse to bytes
 # --------------------------
 
 def parse_memory(value):
@@ -45,6 +49,9 @@ def parse_memory(value):
         ("Gi", 1024**3),
         ("Mi", 1024**2),
         ("Ki", 1024),
+        ("GB", 1000**3),
+        ("MB", 1000**2),
+        ("KB", 1000),
         ("G",  1000**3),
         ("M",  1000**2),
         ("K",  1000),
@@ -54,13 +61,16 @@ def parse_memory(value):
             return int(float(value[:-len(suffix)]) * multiplier)
     return int(value)
 
+# --------------------------
+# Memory — format bytes to human readable
+# Using MB/GB (1000) 
+# --------------------------
+
 def format_memory(value):
-    if value >= 1024**3 and value % 1024**3 == 0:
-        return f"{value // 1024**3}Gi"
-    if value >= 1024**2:
-        return f"{round(value / 1024**2)}Mi"
-    if value >= 1024:
-        return f"{round(value / 1024)}Ki"
+    if value >= 1000**3 and value % 1000**3 == 0:
+        return f"{value // 1000**3}GB"
+    if value >= 1000**2:
+        return f"{round(value / 1000**2)}MB"
     return str(value)
 
 # --------------------------
@@ -110,6 +120,15 @@ def find_resources(data, path=""):
 
     return results
 
+# --------------------------
+# Validate CPU:Memory ratio
+#
+# ratio = memory_in_GB / cpu_in_cores
+#
+# 1:2 → 2.0 to 2.99
+# 1:4 → 4.0 to 4.99
+# 1:8 → 8.0 to 8.99
+# --------------------------
 
 def validate_cpu_memory_ratio(cpu_cores, memory_bytes):
     if cpu_cores is None or memory_bytes is None:
@@ -118,8 +137,8 @@ def validate_cpu_memory_ratio(cpu_cores, memory_bytes):
     if cpu_cores <= 0:
         return None, None
 
-    memory_gi = memory_bytes / 1024**3
-    ratio = memory_gi / cpu_cores
+    memory_gb = memory_bytes / GB
+    ratio = memory_gb / cpu_cores
 
     if 2.0 <= ratio < 3.0:
         return "valid", "1:2"
@@ -142,7 +161,7 @@ def validate_cpu_memory_ratio(cpu_cores, memory_bytes):
 def suggest_memory(cpu_cores):
     suggestions = {}
     for ratio_name, multiplier in RATIOS.items():
-        memory_bytes = cpu_cores * multiplier * 1024**3
+        memory_bytes = cpu_cores * multiplier * GB
         suggestions[ratio_name] = format_memory(int(memory_bytes))
     return suggestions
 
@@ -162,32 +181,11 @@ def build_section(filepath, resources_found):
         requests = resource.get("requests", {}) or {}
         limits   = resource.get("limits",   {}) or {}
 
-        # Parse CPU and Memory for requests
         req_cpu = parse_cpu(requests.get("cpu"))
         req_mem = parse_memory(requests.get("memory"))
-
-        # Parse CPU and Memory for limits
         lim_cpu = parse_cpu(limits.get("cpu"))
         lim_mem = parse_memory(limits.get("memory"))
 
-        # Validate requests CPU:Memory ratio
-        req_result, req_nearest = validate_cpu_memory_ratio(req_cpu, req_mem)
-
-        # Validate limits CPU:Memory ratio
-        lim_result, lim_nearest = validate_cpu_memory_ratio(lim_cpu, lim_mem)
-
-        # Actual ratio strings
-        if req_cpu and req_mem:
-            req_ratio_str = f"1:{round((req_mem / 1024**3) / req_cpu, 2)}"
-        else:
-            req_ratio_str = "—"
-
-        if lim_cpu and lim_mem:
-            lim_ratio_str = f"1:{round((lim_mem / 1024**3) / lim_cpu, 2)}"
-        else:
-            lim_ratio_str = "—"
-
-        # Status for requests
         def get_status(result, nearest):
             if result == "valid":
                 return f"✅ Near {nearest}"
@@ -199,23 +197,30 @@ def build_section(filepath, resources_found):
                 return "❌ Not standard (use 1:2, 1:4 or 1:8)"
             return "—"
 
-        req_status = get_status(req_result, req_nearest)
-        lim_status = get_status(lim_result, lim_nearest)
+        def ratio_str(cpu, mem):
+            if cpu and mem and cpu > 0:
+                return f"1:{round((mem / GB) / cpu, 2)}"
+            return "—"
 
-        # Count valid/invalid
+        # Requests
+        req_result, req_nearest = validate_cpu_memory_ratio(req_cpu, req_mem)
+        req_status = get_status(req_result, req_nearest)
+        req_suggestions = suggest_memory(req_cpu) if req_cpu else None
+
         if req_result == "valid":
             valid += 1
         elif req_result in ("too-low", "too-high", "not-standard"):
             invalid += 1
 
+        # Limits
+        lim_result, lim_nearest = validate_cpu_memory_ratio(lim_cpu, lim_mem)
+        lim_status = get_status(lim_result, lim_nearest)
+        lim_suggestions = suggest_memory(lim_cpu) if lim_cpu else None
+
         if lim_result == "valid":
             valid += 1
         elif lim_result in ("too-low", "too-high", "not-standard"):
             invalid += 1
-
-        # Memory suggestions based on CPU (CPU stays fixed)
-        req_suggestions = suggest_memory(req_cpu) if req_cpu else None
-        lim_suggestions = suggest_memory(lim_cpu) if lim_cpu else None
 
         # Requests table
         lines.append(f"#### `{path}` — Requests")
@@ -229,13 +234,13 @@ def build_section(filepath, resources_found):
         lines.append(
             f"| `{req_cpu_str}` "
             f"| `{req_mem_str}` "
-            f"| `{req_ratio_str}` "
+            f"| `{ratio_str(req_cpu, req_mem)}` "
             f"| {req_status} "
             f"| `{req_suggestions['1:2']}` "
             f"| `{req_suggestions['1:4']}` "
             f"| `{req_suggestions['1:8']}` |"
             if req_suggestions else
-            f"| `{req_cpu_str}` | `{req_mem_str}` | `{req_ratio_str}` | {req_status} | — | — | — |"
+            f"| `{req_cpu_str}` | `{req_mem_str}` | — | — | — | — | — |"
         )
 
         lines.append("")
@@ -252,13 +257,13 @@ def build_section(filepath, resources_found):
         lines.append(
             f"| `{lim_cpu_str}` "
             f"| `{lim_mem_str}` "
-            f"| `{lim_ratio_str}` "
+            f"| `{ratio_str(lim_cpu, lim_mem)}` "
             f"| {lim_status} "
             f"| `{lim_suggestions['1:2']}` "
             f"| `{lim_suggestions['1:4']}` "
             f"| `{lim_suggestions['1:8']}` |"
             if lim_suggestions else
-            f"| `{lim_cpu_str}` | `{lim_mem_str}` | `{lim_ratio_str}` | {lim_status} | — | — | — |"
+            f"| `{lim_cpu_str}` | `{lim_mem_str}` | — | — | — | — | — |"
         )
 
         lines.append("")
@@ -317,6 +322,7 @@ def main():
         "",
         "> **CPU stays fixed. Only Memory needs to be adjusted.**",
         "> **Valid CPU:Memory ranges:** `1:2` (2.0–2.99×) · `1:4` (4.0–4.99×) · `1:8` (8.0–8.99×)",
+        "> Memory suggestions use **GB** (1000-based), not GiB (1024-based).",
         "> Please fix non-standard ratios before merging.",
         "",
     ]
@@ -326,19 +332,22 @@ def main():
     report.append(
         "\n---\n"
         "<details><summary>ℹ️ How to fix</summary>\n\n"
-        "CPU stays unchanged. Only update the **memory** to match a standard CPU:Memory ratio:\n"
+        "CPU stays unchanged. Only update **memory** to match a standard CPU:Memory ratio.\n\n"
+        "Memory is calculated using GB (1000-based):\n"
+        "```\n"
+        "cpu = 300m = 0.3 cores\n"
+        "1:2 → 0.3 × 2GB = 600MB\n"
+        "1:4 → 0.3 × 4GB = 1200MB\n"
+        "1:8 → 0.3 × 8GB = 2400MB\n"
+        "```\n"
         "```yaml\n"
-        "# Example: cpu = 500m (0.5 cores)\n"
-        "# 1:2 → memory = 1Gi  (0.5 × 2)\n"
-        "# 1:4 → memory = 2Gi  (0.5 × 4)\n"
-        "# 1:8 → memory = 4Gi  (0.5 × 8)\n"
         "resources:\n"
         "  requests:\n"
-        "    cpu: 500m      # never changes\n"
-        "    memory: 2Gi    # adjust this\n"
+        "    cpu: 300m      # never changes\n"
+        "    memory: 600MB  # 1:2 ratio\n"
         "  limits:\n"
-        "    cpu: 500m      # never changes\n"
-        "    memory: 2Gi    # adjust this\n"
+        "    cpu: 300m      # never changes\n"
+        "    memory: 600MB  # 1:2 ratio\n"
         "```\n"
         "</details>"
     )
