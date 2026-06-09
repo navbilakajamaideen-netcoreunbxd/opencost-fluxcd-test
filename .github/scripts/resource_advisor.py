@@ -16,7 +16,7 @@ RATIOS = {
     "1:8": 8
 }
 
-# GB = 1000^3 bytes 
+# GB = 1000^3 bytes
 GB = 1000**3
 MB = 1000**2
 
@@ -29,7 +29,7 @@ def parse_cpu(value):
         return None
     value = str(value).strip()
     if value.endswith("m"):
-        return float(value[:-1]) / 1000  
+        return float(value[:-1]) / 1000
     return float(value)
 
 def format_cpu(value):
@@ -65,7 +65,7 @@ def parse_memory(value):
 
 # --------------------------
 # Memory — format bytes to human readable
-# Using MB/GB (1000) 
+# Using MB/GB (1000-based)
 # --------------------------
 
 def format_memory(value):
@@ -77,6 +77,7 @@ def format_memory(value):
     if value >= 1000**2:
         return f"{round(value / 1000**2)}MB"
     return str(value)
+
 # --------------------------
 # Git Diff
 # --------------------------
@@ -160,6 +161,7 @@ def validate_cpu_memory_ratio(cpu_cores, memory_bytes):
 # --------------------------
 # Suggest memory based on CPU
 # CPU stays fixed, only memory changes
+# Using GB (1000-based)
 # --------------------------
 
 def suggest_memory(cpu_cores):
@@ -185,6 +187,13 @@ def build_section(filepath, resources_found):
         requests = resource.get("requests", {}) or {}
         limits   = resource.get("limits",   {}) or {}
 
+        # Keep original strings for display
+        req_cpu_raw = str(requests.get("cpu", "—"))
+        req_mem_raw = str(requests.get("memory", "—"))
+        lim_cpu_raw = str(limits.get("cpu", "—"))
+        lim_mem_raw = str(limits.get("memory", "—"))
+
+        # Parse for calculation only
         req_cpu = parse_cpu(requests.get("cpu"))
         req_mem = parse_memory(requests.get("memory"))
         lim_cpu = parse_cpu(limits.get("cpu"))
@@ -232,19 +241,16 @@ def build_section(filepath, resources_found):
         lines.append("| CPU (fixed) | Memory | CPU:Memory Ratio | Status | 1:2 memory | 1:4 memory | 1:8 memory |")
         lines.append("|---|---|---|---|---|---|---|")
 
-        req_cpu_str = format_cpu(req_cpu) if req_cpu else "—"
-        req_mem_str = format_memory(req_mem) if req_mem else "—"
-
         lines.append(
-            f"| `{req_cpu_str}` "
-            f"| `{req_mem_str}` "
+            f"| `{req_cpu_raw}` "
+            f"| `{req_mem_raw}` "
             f"| `{ratio_str(req_cpu, req_mem)}` "
             f"| {req_status} "
             f"| `{req_suggestions['1:2']}` "
             f"| `{req_suggestions['1:4']}` "
             f"| `{req_suggestions['1:8']}` |"
             if req_suggestions else
-            f"| `{req_cpu_str}` | `{req_mem_str}` | — | — | — | — | — |"
+            f"| `{req_cpu_raw}` | `{req_mem_raw}` | — | — | — | — | — |"
         )
 
         lines.append("")
@@ -255,19 +261,16 @@ def build_section(filepath, resources_found):
         lines.append("| CPU (fixed) | Memory | CPU:Memory Ratio | Status | 1:2 memory | 1:4 memory | 1:8 memory |")
         lines.append("|---|---|---|---|---|---|---|")
 
-        lim_cpu_str = format_cpu(lim_cpu) if lim_cpu else "—"
-        lim_mem_str = format_memory(lim_mem) if lim_mem else "—"
-
         lines.append(
-            f"| `{lim_cpu_str}` "
-            f"| `{lim_mem_str}` "
+            f"| `{lim_cpu_raw}` "
+            f"| `{lim_mem_raw}` "
             f"| `{ratio_str(lim_cpu, lim_mem)}` "
             f"| {lim_status} "
             f"| `{lim_suggestions['1:2']}` "
             f"| `{lim_suggestions['1:4']}` "
             f"| `{lim_suggestions['1:8']}` |"
             if lim_suggestions else
-            f"| `{lim_cpu_str}` | `{lim_mem_str}` | — | — | — | — | — |"
+            f"| `{lim_cpu_raw}` | `{lim_mem_raw}` | — | — | — | — | — |"
         )
 
         lines.append("")
@@ -339,19 +342,19 @@ def main():
         "CPU stays unchanged. Only update **memory** to match a standard CPU:Memory ratio.\n\n"
         "Memory is calculated using GB (1000-based):\n"
         "```\n"
-        "cpu = 300m = 0.3 cores\n"
-        "1:2 → 0.3 × 2GB = 600MB\n"
-        "1:4 → 0.3 × 4GB = 1200MB\n"
-        "1:8 → 0.3 × 8GB = 2400MB\n"
+        "cpu = 500m = 0.5 cores\n"
+        "1:2 → 0.5 × 2GB = 1GB\n"
+        "1:4 → 0.5 × 4GB = 2GB\n"
+        "1:8 → 0.5 × 8GB = 4GB\n"
         "```\n"
         "```yaml\n"
         "resources:\n"
         "  requests:\n"
-        "    cpu: 300m      # never changes\n"
-        "    memory: 600MB  # 1:2 ratio\n"
+        "    cpu: 500m      # never changes\n"
+        "    memory: 1GB    # 1:2 ratio\n"
         "  limits:\n"
-        "    cpu: 300m      # never changes\n"
-        "    memory: 600MB  # 1:2 ratio\n"
+        "    cpu: 500m      # never changes\n"
+        "    memory: 1GB    # 1:2 ratio\n"
         "```\n"
         "</details>"
     )
