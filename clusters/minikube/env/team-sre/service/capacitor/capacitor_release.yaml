@@ -23,3 +23,12 @@ spec:
   valuesFrom:
     - kind: ConfigMap
       name: capacitor-cluster-values
+
+  values:
+    resources:
+      requests:
+        cpu: 2        
+        memory: 1Gi   
+      limits:
+        cpu: 6        
+        memory: 3Gi   
