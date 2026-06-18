@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-full-10-large-whole-cpu-valid-1-2
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: "16"         
+              memory: 32Gi
+            limits:
+              cpu: "32"         
+              memory: 64Gi

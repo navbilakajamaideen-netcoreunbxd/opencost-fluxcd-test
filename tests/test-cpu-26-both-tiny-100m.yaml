@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-cpu-26-both-tiny-100m
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: 100m       
+              memory: 200Mi
+            limits:
+              cpu: 200m       
+              memory: 400Mi

@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-cpu-29-both-whole-3core-original-example
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: "3"        
+              memory: 6Gi
+            limits:
+              cpu: "6"        
+              memory: 12Gi

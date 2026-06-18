@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-full-07-small-millicore-valid-1-2
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: 100m         
+              memory: 200Mi
+            limits:
+              cpu: 200m         
+              memory: 400Mi

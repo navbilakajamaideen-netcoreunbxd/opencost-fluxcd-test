@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-full-03-valid-1-8-whole-cpu
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: "1"          
+              memory: 8Gi
+            limits:
+              cpu: "2"          
+              memory: 16Gi

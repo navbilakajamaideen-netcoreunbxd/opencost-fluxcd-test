@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-full-13-mixed-req-clean-limit-flagged
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: 1800m        
+              memory: 3.6GB
+            limits:
+              cpu: "4"          
+              memory: 8Gi

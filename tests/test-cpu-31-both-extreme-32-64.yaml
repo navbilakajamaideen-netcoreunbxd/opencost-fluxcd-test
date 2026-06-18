@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-cpu-31-both-extreme-32-64
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: "32"       
+              memory: 64Gi
+            limits:
+              cpu: "64"       
+              memory: 128Gi

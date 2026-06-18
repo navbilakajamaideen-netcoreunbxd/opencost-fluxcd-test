@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-cpu-36-asymmetric-1-2-vs-1-4
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: "1"        
+              memory: 2Gi
+            limits:
+              cpu: "2"        
+              memory: 8Gi

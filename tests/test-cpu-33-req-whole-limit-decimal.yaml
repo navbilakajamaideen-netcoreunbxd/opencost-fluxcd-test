@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-cpu-33-req-whole-limit-decimal
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: "2"        
+              memory: 4Gi
+            limits:
+              cpu: 3600m      
+              memory: 7.2GB

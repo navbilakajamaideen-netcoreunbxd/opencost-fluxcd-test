@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-full-11-extreme-large-not-standard
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: "64"         
+              memory: 384Gi      
+            limits:
+              cpu: "128"        
+              memory: 768Gi

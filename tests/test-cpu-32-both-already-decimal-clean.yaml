@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-cpu-32-both-already-decimal-clean
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: 1800m      
+              memory: 3.6GB
+            limits:
+              cpu: 3600m      
+              memory: 7.2GB

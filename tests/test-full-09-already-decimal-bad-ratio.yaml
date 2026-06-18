@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-full-09-already-decimal-bad-ratio
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: 3600m        
+              memory: 1Gi       
+            limits:
+              cpu: 7200m        
+              memory: 2Gi       
