@@ -62,7 +62,7 @@ def recommend_cpu(cpu_cores):
 def is_cpu_already_optimized(cpu_cores):
     
     if cpu_cores is None or cpu_cores <= 0:
-        return True  # nothing to recommend
+        return True  
 
     return cpu_cores != int(cpu_cores)
 
@@ -156,10 +156,6 @@ def find_resources(data, path=""):
 # Validate CPU:Memory ratio
 #
 # ratio = memory_in_GB / cpu_in_cores
-#
-# 1:2 → 2.0 to 2.99
-# 1:4 → 4.0 to 4.99
-# 1:8 → 8.0 to 8.99
 # --------------------------
 
 def validate_cpu_memory_ratio(cpu_cores, memory_bytes):
@@ -353,7 +349,7 @@ def main():
         total_invalid += invalid
         total_cpu_recommendations += cpu_recs
 
-        
+       
         if invalid > 0 or cpu_recs > 0:
             sections.append(section)
 
@@ -367,40 +363,14 @@ def main():
         f"✅ Standard Ratios: **{total_valid}**",
         f"❌ Non-standard Ratios: **{total_invalid}**",
         f"💡 CPU Recommendations: **{total_cpu_recommendations}**",
-
-        "> Please fix non-standard ratios and cpu if recommended before merging.",
+        
+        "> Please fix non-standard ratios and CPU if recommended before merging.",
         "",
     ]
 
     report.extend(sections)
 
-    how_to_fix = """
----
-<details><summary>ℹ️ How to fix</summary>
-
-**Memory / ratio issues:** CPU stays unchanged. Only update **memory** to match a standard CPU:Memory ratio.
-
-Memory is calculated using GB (1000-based):
-```
-cpu = 500m = 0.5 cores
-1:2 → 0.5 × 2GB = 1GB
-1:4 → 0.5 × 4GB = 2GB
-1:8 → 0.5 × 8GB = 4GB
-```
-
-```yaml
-resources:
-  requests:
-    cpu: 500m      
-    memory: 1GB    # 1:2 ratio
-  limits:
-    cpu: 500m      
-    memory: 1GB    # 1:2 ratio
-```
-
-</details>"""
-
-    report.append(how_to_fix)
+   
 
     with open(args.output, "w") as f:
         f.write("\n".join(report))
