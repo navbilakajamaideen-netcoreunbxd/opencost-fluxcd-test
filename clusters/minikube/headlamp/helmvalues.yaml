@@ -8,10 +8,10 @@ data:
     replicaCount: 1
 
     resources:
-      limits:
+      requests:
         cpu: 256m
         memory: 256Mi
-      requests:
+      limits:
         cpu: 512m
         memory: 512Mi
 
