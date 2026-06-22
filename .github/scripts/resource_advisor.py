@@ -24,8 +24,10 @@ MB = 1000**2
 # TODO: 
 CPU_RECOMMENDATION_FACTOR = 0.90
 
-
 MIN_RECOMMENDED_MILLICORES = 10
+
+
+CPU_MEMORY_RECOMMENDATION_DOC_LINK = "https://unbxdwiki.atlassian.net/wiki/spaces/DEVOPS/pages/3628630046/Resource+Advisor+Bot"
 
 # --------------------------
 # CPU
@@ -60,9 +62,8 @@ def recommend_cpu(cpu_cores):
     return f"{recommended_millicores}m"
 
 def is_cpu_already_optimized(cpu_cores):
-    
     if cpu_cores is None or cpu_cores <= 0:
-        return True  
+        return True
 
     return cpu_cores != int(cpu_cores)
 
@@ -92,7 +93,6 @@ def parse_memory(value):
 
 # --------------------------
 # Memory — format bytes to human readable
-# Using MB/GB (1000-based)
 # --------------------------
 
 def format_memory(value):
@@ -154,7 +154,6 @@ def find_resources(data, path=""):
 
 # --------------------------
 # Validate CPU:Memory ratio
-#
 # ratio = memory_in_GB / cpu_in_cores
 # --------------------------
 
@@ -242,28 +241,35 @@ def build_section(filepath, resources_found):
         req_result, req_nearest = validate_cpu_memory_ratio(req_cpu, req_mem)
         req_status = get_status(req_result, req_nearest)
         req_suggestions = suggest_memory(req_cpu) if req_cpu else None
-        req_cpu_recommendation = recommend_cpu(req_cpu) if req_cpu else None
-        req_cpu_flagged = req_cpu_recommendation and not is_cpu_already_optimized(req_cpu)
+
+    
+        if req_cpu and not is_cpu_already_optimized(req_cpu):
+            req_cpu_recommendation = recommend_cpu(req_cpu)
+        else:
+            req_cpu_recommendation = None
 
         if req_result == "valid":
             valid += 1
         elif req_result in ("too-low", "too-high", "not-standard"):
             invalid += 1
-        if req_cpu_flagged:
+        if req_cpu_recommendation:
             cpu_recommendations += 1
 
         # Limits
         lim_result, lim_nearest = validate_cpu_memory_ratio(lim_cpu, lim_mem)
         lim_status = get_status(lim_result, lim_nearest)
         lim_suggestions = suggest_memory(lim_cpu) if lim_cpu else None
-        lim_cpu_recommendation = recommend_cpu(lim_cpu) if lim_cpu else None
-        lim_cpu_flagged = lim_cpu_recommendation and not is_cpu_already_optimized(lim_cpu)
+
+        if lim_cpu and not is_cpu_already_optimized(lim_cpu):
+            lim_cpu_recommendation = recommend_cpu(lim_cpu)
+        else:
+            lim_cpu_recommendation = None
 
         if lim_result == "valid":
             valid += 1
         elif lim_result in ("too-low", "too-high", "not-standard"):
             invalid += 1
-        if lim_cpu_flagged:
+        if lim_cpu_recommendation:
             cpu_recommendations += 1
 
         # Requests table
@@ -349,7 +355,6 @@ def main():
         total_invalid += invalid
         total_cpu_recommendations += cpu_recs
 
-       
         if invalid > 0 or cpu_recs > 0:
             sections.append(section)
 
@@ -363,14 +368,18 @@ def main():
         f"✅ Standard Ratios: **{total_valid}**",
         f"❌ Non-standard Ratios: **{total_invalid}**",
         f"💡 CPU Recommendations: **{total_cpu_recommendations}**",
-        
-        "> Please fix non-standard ratios and CPU if recommended before merging.",
         "",
+        "> Please fix non-standard ratios and CPU if recommended before merging.",
     ]
 
-    report.extend(sections)
+    
+    if total_cpu_recommendations > 0:
+        report.append(
+             f"> 📘 Resource Advisor documentation: {CPU_MEMORY_RECOMMENDATION_DOC_LINK}"
+        )
 
-   
+    report.append("")
+    report.extend(sections)
 
     with open(args.output, "w") as f:
         f.write("\n".join(report))
