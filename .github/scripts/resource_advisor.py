@@ -186,10 +186,24 @@ def validate_cpu_memory_ratio(cpu_cores, memory_bytes):
 # --------------------------
 
 def suggest_memory(cpu_cores):
+    
     suggestions = {}
+    is_millicore = cpu_cores != int(cpu_cores)  
+
     for ratio_name, multiplier in RATIOS.items():
         memory_bytes = cpu_cores * multiplier * GB
-        suggestions[ratio_name] = format_memory(int(memory_bytes))
+
+        if is_millicore:
+            
+            mb = round(memory_bytes / MB)
+            suggestions[ratio_name] = f"{mb}MB"
+        else:
+            gb = memory_bytes / GB
+            if gb == int(gb):
+                suggestions[ratio_name] = f"{int(gb)}GB"
+            else:
+                suggestions[ratio_name] = f"{round(gb, 1)}GB"
+
     return suggestions
 
 # --------------------------
