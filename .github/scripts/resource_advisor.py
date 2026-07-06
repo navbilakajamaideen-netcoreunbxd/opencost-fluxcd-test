@@ -21,7 +21,6 @@ MB = 1000**2
 # --------------------------
 # CPU recommendation config
 # --------------------------
-# TODO: 
 CPU_RECOMMENDATION_FACTOR = 0.90
 
 MIN_RECOMMENDED_MILLICORES = 10
@@ -182,19 +181,17 @@ def validate_cpu_memory_ratio(cpu_cores, memory_bytes):
 
 # --------------------------
 # Suggest memory based on CPU
-# Using GB (1000-based)
 # --------------------------
 
 def suggest_memory(cpu_cores):
     
     suggestions = {}
-    is_millicore = cpu_cores != int(cpu_cores)  
+    is_millicore = cpu_cores != int(cpu_cores)
 
     for ratio_name, multiplier in RATIOS.items():
         memory_bytes = cpu_cores * multiplier * GB
 
         if is_millicore:
-            
             mb = round(memory_bytes / MB)
             suggestions[ratio_name] = f"{mb}MB"
         else:
@@ -251,16 +248,21 @@ def build_section(filepath, resources_found):
                 return f"1:{round((mem / GB) / cpu, 2)}"
             return "—"
 
-        # Requests
+        
         req_result, req_nearest = validate_cpu_memory_ratio(req_cpu, req_mem)
         req_status = get_status(req_result, req_nearest)
-        req_suggestions = suggest_memory(req_cpu) if req_cpu else None
 
-    
         if req_cpu and not is_cpu_already_optimized(req_cpu):
             req_cpu_recommendation = recommend_cpu(req_cpu)
         else:
             req_cpu_recommendation = None
+
+        
+        if req_cpu:
+            effective_req_cpu = parse_cpu(req_cpu_recommendation) if req_cpu_recommendation else req_cpu
+            req_suggestions = suggest_memory(effective_req_cpu)
+        else:
+            req_suggestions = None
 
         if req_result == "valid":
             valid += 1
@@ -272,12 +274,18 @@ def build_section(filepath, resources_found):
         # Limits
         lim_result, lim_nearest = validate_cpu_memory_ratio(lim_cpu, lim_mem)
         lim_status = get_status(lim_result, lim_nearest)
-        lim_suggestions = suggest_memory(lim_cpu) if lim_cpu else None
 
         if lim_cpu and not is_cpu_already_optimized(lim_cpu):
             lim_cpu_recommendation = recommend_cpu(lim_cpu)
         else:
             lim_cpu_recommendation = None
+
+        
+        if lim_cpu:
+            effective_lim_cpu = parse_cpu(lim_cpu_recommendation) if lim_cpu_recommendation else lim_cpu
+            lim_suggestions = suggest_memory(effective_lim_cpu)
+        else:
+            lim_suggestions = None
 
         if lim_result == "valid":
             valid += 1
@@ -386,7 +394,6 @@ def main():
         "> Please fix non-standard ratios and CPU if recommended before merging.",
     ]
 
-    
     if total_cpu_recommendations > 0:
         report.append(
              f"> 📘 Resource Advisor documentation: {CPU_MEMORY_RECOMMENDATION_DOC_LINK}"
